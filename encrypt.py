@@ -5,7 +5,7 @@ import os
 import argparse
 from pkcs import PKCS7
 from feistel import FeistelNetwork
-from modes import ECB, CBC, CTR
+from modes import ECB, CBC, CTR, CFB, OFB
 from iterators import file_block_iterator, eof_signal_iterator
 
 """
@@ -62,6 +62,40 @@ def main():
                 nonce = nonce.rjust(nonce_size, b'\0')
 
         mode = CTR(cipher, nonce)
+
+    elif args.mode == "CFB":
+
+        if args.iv is None:
+            parser.error("CFB mode requires a value for --iv")
+
+        try:
+            iv = int(args.iv)
+            iv = iv.to_bytes(cipher.block_size, "big")
+        except ValueError:
+            iv = args.iv.encode("utf-8")
+            if len(iv) > cipher.block_size:
+                iv = iv[:cipher.block_size]
+            else:
+                iv = iv.rjust(cipher.block_size, b'\0')
+
+        mode = CFB(cipher, iv)
+
+    elif args.mode == "OFB":
+
+        if args.iv is None:
+            parser.error("OFB mode requires a value for --iv")
+
+        try:
+            iv = int(args.iv)
+            iv = iv.to_bytes(cipher.block_size, "big")
+        except ValueError:
+            iv = args.iv.encode("utf-8")
+            if len(iv) > cipher.block_size:
+                iv = iv[:cipher.block_size]
+            else:
+                iv = iv.rjust(cipher.block_size, b'\0')
+
+        mode = OFB(cipher, iv)
     else:
         raise ValueError("Mode of operation {} is not recognised".format(args.mode))
 

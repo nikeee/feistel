@@ -12,7 +12,12 @@ Some examples of famous feistel ciphers are [DES](https://en.wikipedia.org/wiki/
 ##### Decryption
 `python encrypt.py -d -m ECB input_file output_file`
 
-At the moment only ECB, CBC and CTR modes of operation are permitted.
+At the moment only ECB, CBC, CTR, CFB and OFB modes of operation are permitted.
+Depending on the mode of operation, you need to pass a nonce or an IV. For example, consider the CTR or CFB modes:
+```shell
+python3 encrypt.py -e --nonce 42 -m CTR input_file output_file
+python3 encrypt.py -e --iv 0123456789ABCDEF0123456789ABCDEF -m CFB input_file output_file
+```
 
 ## Cool things that could be added
 This cipher is a bit bland, it would benefit from:

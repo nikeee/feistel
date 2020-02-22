@@ -158,3 +158,83 @@ class CTR(ModeOfOperation):
         # Decryption actually performs the same steps as encryption.
         # We also don't have to remove any padding. Therefore, we can just use the encryption procedure.
         return self.encrypt(block_iterator)
+
+"""
+Output Feedback (OFB) mode implemented by Niklas Mollenhauer <https://github.com/nikeee>.
+
+For more information, visit https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Output_Feedback_(OFB)
+"""
+class OFB(ModeOfOperation):
+    def __init__(self, cipher, iv):
+        super(OFB, self).__init__(cipher)
+
+        assert len(iv) == self.block_size
+        self.iv = iv
+
+    def encrypt(self, block_iterator):
+
+        last_xor_block = self.iv
+
+        eof_iterator = eof_signal_iterator(block_iterator)
+
+        for data, eof in eof_iterator:
+
+            xor_block = self.cipher.encrypt_block(last_xor_block)
+            last_xor_block = xor_block
+
+            if eof and len(data) < self.block_size:
+                xor_block = xor_block[:len(data)]
+
+            ciphertext = self._xor(data, xor_block)
+
+            yield ciphertext
+
+    def decrypt(self, block_iterator):
+        # Decryption actually performs the same steps as encryption.
+        # We also don't have to remove any padding. Therefore, we can just use the encryption procedure.
+        return self.encrypt(block_iterator)
+
+"""
+Cipher Feedback (CFB) mode implemented by Niklas Mollenhauer <https://github.com/nikeee>.
+
+For more information, visit https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Feedback_(CFB)
+"""
+class CFB(ModeOfOperation):
+    def __init__(self, cipher, iv):
+        super(CFB, self).__init__(cipher)
+
+        assert len(iv) == self.block_size
+        self.iv = iv
+
+    def encrypt(self, block_iterator):
+
+        last_ciphertext = self.iv
+
+        eof_iterator = eof_signal_iterator(block_iterator)
+        for data, eof in eof_iterator:
+
+            xor_block = self.cipher.encrypt_block(last_ciphertext)
+
+            if eof and len(data) < self.block_size:
+                xor_block = xor_block[:len(data)]
+
+            ciphertext = self._xor(data, xor_block)
+            last_ciphertext = ciphertext
+
+            yield ciphertext
+
+    def decrypt(self, block_iterator):
+
+        last_ciphertext = self.iv
+
+        eof_iterator = eof_signal_iterator(block_iterator)
+        for ciphertext, eof in eof_iterator:
+            xor_block = self.cipher.encrypt_block(last_ciphertext)
+
+            if eof and len(ciphertext) < self.block_size:
+                xor_block = xor_block[:len(ciphertext)]
+
+            plaintext = self._xor(ciphertext, xor_block)
+            last_ciphertext = ciphertext
+
+            yield plaintext
