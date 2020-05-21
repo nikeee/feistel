@@ -50,16 +50,7 @@ def main():
         if args.nonce is None:
             parser.error("CTR mode requires a value for --nonce")
 
-        nonce_size = cipher.block_size // 2
-        try:
-            nonce = int(args.nonce)
-            nonce = nonce.to_bytes(nonce_size, "big")
-        except ValueError:
-            nonce = args.nonce.encode("utf-8")
-            if len(nonce) > nonce_size:
-                nonce = nonce[:nonce_size]
-            else:
-                nonce = nonce.rjust(nonce_size, b'\0')
+        nonce = parse_nonce(args.nonce, cipher.block_size)
 
         mode = CTR(cipher, nonce)
 
@@ -68,15 +59,7 @@ def main():
         if args.iv is None:
             parser.error("CFB mode requires a value for --iv")
 
-        try:
-            iv = int(args.iv)
-            iv = iv.to_bytes(cipher.block_size, "big")
-        except ValueError:
-            iv = args.iv.encode("utf-8")
-            if len(iv) > cipher.block_size:
-                iv = iv[:cipher.block_size]
-            else:
-                iv = iv.rjust(cipher.block_size, b'\0')
+        iv = parse_iv(args.iv, cipher.block_size)
 
         mode = CFB(cipher, iv)
 
@@ -85,15 +68,7 @@ def main():
         if args.iv is None:
             parser.error("OFB mode requires a value for --iv")
 
-        try:
-            iv = int(args.iv)
-            iv = iv.to_bytes(cipher.block_size, "big")
-        except ValueError:
-            iv = args.iv.encode("utf-8")
-            if len(iv) > cipher.block_size:
-                iv = iv[:cipher.block_size]
-            else:
-                iv = iv.rjust(cipher.block_size, b'\0')
+        iv = parse_iv(args.iv, cipher.block_size)
 
         mode = OFB(cipher, iv)
     else:
@@ -110,6 +85,33 @@ def main():
         with open(args.output_file, 'wb') as f:
             for plaintext in mode.decrypt(file_blocks):
                 f.write(plaintext)
+
+
+def parse_iv(candidate, block_size):
+    try:
+        iv = int(candidate)
+        iv = iv.to_bytes(block_size, "big")
+    except ValueError:
+        iv = candidate.encode("utf-8")
+        if len(iv) > block_size:
+            iv = iv[:block_size]
+        else:
+            iv = iv.rjust(block_size, b'\0')
+    return iv
+
+
+def parse_nonce(candidate, block_size):
+    nonce_size = block_size // 2
+    try:
+        nonce = int(candidate)
+        nonce = nonce.to_bytes(nonce_size, "big")
+    except ValueError:
+        nonce = candidate.encode("utf-8")
+        if len(nonce) > nonce_size:
+            nonce = nonce[:nonce_size]
+        else:
+            nonce = nonce.rjust(nonce_size, b'\0')
+    return nonce
 
 
 if __name__ == "__main__":
